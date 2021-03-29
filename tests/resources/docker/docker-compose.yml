@@ -1,0 +1,33 @@
+version: "3"
+
+services:
+  openvpn:
+    container_name: "openvpn-${python_version}-${openvpn_version}"
+    build:
+      context: ../../../
+      dockerfile: tests/resources/docker/openvpn/Dockerfile
+      args:
+        python_version: "${python_version}"
+        openvpn_version: "${openvpn_version}"
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - TEST_LDAP_URL=ldap://openldap:1389
+      - TEST_LDAP_BASE_DN=dc=example,dc=org
+      - TEST_LDAP_ADMIN_DN=cn=admin,dc=example,dc=org
+      - TEST_LDAP_ADMIN_PASSWORD=adminpassword
+      - TEST_OPENVPN_BINARY=/usr/sbin/openvpn
+    volumes:
+      - ../../../:/project
+    links:
+      - openldap:openldap
+  openldap:
+    container_name: "openldap-${python_version}-${openvpn_version}"
+    image: docker.io/bitnami/openldap:2-debian-10
+    ports:
+      - '1389:1389'
+      - '1636:1636'
+    environment:
+      - LDAP_ADMIN_USERNAME=admin
+      - LDAP_ADMIN_PASSWORD=adminpassword
