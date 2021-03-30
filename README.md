@@ -25,7 +25,7 @@ If you are fine with that go ahead.
 Install the package via pip:
 
 ```shell
-pip install openvpm-ldap-auth
+pip install openvpn-ldap-auth
 ```
 
 Then create `/etc/openvpn/ldap.yaml`:
