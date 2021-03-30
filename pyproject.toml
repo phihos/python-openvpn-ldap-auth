@@ -3,6 +3,23 @@ name = "openvpn-ldap-auth"
 version = "0.1.0"
 description = "An auth verify script for OpenVPN to authenticate via LDAP."
 authors = ["Philipp Hossner <philipph@posteo.de>"]
+license = 'MIT'
+readme = 'README.md'
+homepage = 'https://github.com/phihos/python-openvpn-ldap-auth/'
+repository = 'https://github.com/phihos/python-openvpn-ldap-auth/'
+keywords = [
+    "OpenVPN",
+    "",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Plugins",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX",
+    "Topic :: System :: Systems Administration :: Authentication/Directory :: LDAP",
+]
+
 packages = [{ include = "openvpn_ldap_auth" }, ]
 
 [tool.poetry.scripts]
