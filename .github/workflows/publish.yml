@@ -14,8 +14,12 @@ jobs:
         pypi_token: ${{ secrets.PYPI_TOKEN }}
   pyinstaller:
     runs-on: ${{ matrix.os }}
-    matrix:
-      os: [ ubuntu-20.04, ubuntu-18.04, ubuntu-16.04 ]
+    strategy:
+      matrix:
+        os:
+          - ubuntu-20.04
+          - ubuntu-18.04
+          - ubuntu-16.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
