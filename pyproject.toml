@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "openvpn-ldap-auth"
-version = "0.1.2"
+version = "0.1.3"
 description = "An auth verify script for OpenVPN to authenticate via LDAP."
 authors = ["Philipp Hossner <philipph@posteo.de>"]
 license = 'MIT'
