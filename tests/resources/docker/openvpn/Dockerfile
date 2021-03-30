@@ -14,7 +14,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -yq openvpn
 RUN pip install poetry
 RUN mkdir /project
 WORKDIR /project
-COPY pyproject.toml poetry.lock /project/
+COPY pyproject.toml poetry.lock README.md /project/
 COPY openvpn_ldap_auth /project/openvpn_ldap_auth
 RUN poetry export -f requirements.txt --output requirements.txt
 RUN pip install -r requirements.txt
