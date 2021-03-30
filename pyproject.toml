@@ -9,7 +9,7 @@ homepage = 'https://github.com/phihos/python-openvpn-ldap-auth/'
 repository = 'https://github.com/phihos/python-openvpn-ldap-auth/'
 keywords = [
     "OpenVPN",
-    "",
+    "LDAP",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
