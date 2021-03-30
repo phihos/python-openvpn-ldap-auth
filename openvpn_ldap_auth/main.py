@@ -204,7 +204,7 @@ class LDAPAuthenticator:
         except ldap.INVALID_CREDENTIALS:
             raise LDAPException(f"Invalid password for {bind_dn}")
         except ldap.LDAPError as e:
-            raise LDAPException(f"Simple bind failed for {bind_dn} {password}: {e}")
+            raise LDAPException(f"Simple bind failed for {bind_dn}: {e}")
         return con
 
     def _find_user(self, username):
