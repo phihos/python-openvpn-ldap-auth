@@ -1,5 +1,7 @@
 # Python OpenVPN LDAP Auth
 
+![main build status](https://github.com/phihos/Python-OpenVPN-LDAP-Auth/actions/workflows/test.yml/badge.svg?branch=main)
+
 An auth verify script for [OpenVPN](https://community.openvpn.net) to authenticate via LDAP. Each VPN login is
 forwarded to this script and the script in turn attempts a simple bind against the specified LDAP server. When the bind
 is successful the script returns exit code 0 telling OpenVPn that the credentials are valid.
