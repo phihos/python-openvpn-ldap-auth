@@ -5,7 +5,7 @@
 
 An auth verify script for [OpenVPN](https://community.openvpn.net) to authenticate via LDAP. Each VPN login is
 forwarded to this script and the script in turn attempts a simple bind against the specified LDAP server. When the bind
-is successful the script returns exit code 0 telling OpenVPn that the credentials are valid.
+is successful the script returns exit code 0 telling OpenVPN that the credentials are valid.
 
 Although there already is the [openvpn-auth-ldap](https://github.com/threerings/openvpn-auth-ldap) plugin I felt the
 need to write this auth script. First the source code is more accessible due to it being written in Python. Second it
