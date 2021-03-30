@@ -1,5 +1,6 @@
 # Python OpenVPN LDAP Auth
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 ![main build status](https://github.com/phihos/Python-OpenVPN-LDAP-Auth/actions/workflows/test.yml/badge.svg?branch=main)
 
 An auth verify script for [OpenVPN](https://community.openvpn.net) to authenticate via LDAP. Each VPN login is
