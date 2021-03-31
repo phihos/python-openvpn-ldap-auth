@@ -83,7 +83,7 @@ are looking for.
 In the client configuration you need to add a line like
 
 ```
-static-challenge "Enter OTP" 1 # use 0 if the OTP shoul not be echoed
+static-challenge "Enter OTP" 1 # use 0 if the OTP should not be echoed
 ```
 
 When connecting you will now be prompted for your password and your OTP. By setting `authorization.static_challenge` you
