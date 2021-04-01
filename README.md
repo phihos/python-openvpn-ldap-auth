@@ -61,7 +61,7 @@ Now you can start your OpenVPN server and try to connect with a client.
 
 ### Single Executable
 
-For those who wish to [sacrifice a little more performance](https://pyinstaller.readthedocs.io/en/stable/operating-mode.html#how-the-one-file-program-works) for not having to install or compile a Python interpreter or you just qant to quickly try the script out this option might be interesting.
+For those who wish to [sacrifice a little more performance](https://pyinstaller.readthedocs.io/en/stable/operating-mode.html#how-the-one-file-program-works) for not having to install or compile a Python interpreter or you just want to quickly try the script out this option might be interesting.
 Each [release](https://github.com/phihos/python-openvpn-ldap-auth/releases) also has executables attached to it: *openvpn-ldap-auth-&lt;distro&gt;-&lt;distro-version&gt;-&lt;arch&gt;*. They are created via [PyIntaller](https://www.pyinstaller.org/) on the respective Linux distro, version and architecture. They might also work on other distros provided they use the same or a later libc version that the distro uses.
 
 **Important: /tmp must not be read only.**
