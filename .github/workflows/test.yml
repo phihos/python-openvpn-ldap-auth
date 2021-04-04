@@ -23,3 +23,8 @@ jobs:
           pip install tox
       - name: Test with tox
         run: tox -e python${{ matrix.python-version }}-openvpn${{ matrix.openvpn-version }}
+      - name: Archive benchmark results
+        uses: actions/upload-artifact@v2
+        with:
+          name: benchmark-results
+          path: benchmark/*.png

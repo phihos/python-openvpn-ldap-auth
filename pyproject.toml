@@ -36,6 +36,8 @@ pytest = "^6.2"
 pytest-timeout = "^1.4.2"
 pexpect = "^4.8.0"
 pyinstaller = "^4.2"
+plotly = "^4.14.3"
+kaleido = "^0.2.1"
 
 [tool.tox]
 legacy_tox_ini = """
@@ -44,7 +46,7 @@ isolated_build = true
 envlist = python{37,38,39}-openvpn{24,25}
 basepython = python3
 
-[testenv]
+[testenv:python{37,38,39}-openvpn{24,25}]
 skip_install = true
 setenv =
     python37: python_version=3.7
@@ -55,10 +57,14 @@ setenv =
     openvpn25: openvpn_version=2.5
 whitelist_externals =
     docker-compose
-commands =
+    bash
+commands_pre:
     docker-compose -f tests/resources/docker/docker-compose.yml up -d --build
     docker-compose -f tests/resources/docker/docker-compose.yml run openvpn bash -c 'openvpn --version || true'
-    docker-compose -f tests/resources/docker/docker-compose.yml run openvpn bash -c 'poetry install && poetry build && pip install --upgrade --find-links=dist openvpn-ldap-auth && poetry run pytest'
+commands =
+    docker-compose -f tests/resources/docker/docker-compose.yml run openvpn bash -c 'poetry install && poetry build && ./pyinstaller.sh && mv dist/openvpn-ldap-auth /usr/bin/openvpn-ldap-auth-pyinstaller && pip install --upgrade --find-links=dist openvpn-ldap-auth && poetry run pytest {posargs}'
+commands_post:
+    bash -c "docker-compose -f tests/resources/docker/docker-compose.yml run openvpn chown -R $UID /project"
     docker-compose -f tests/resources/docker/docker-compose.yml down
 """
 
