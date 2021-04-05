@@ -1,19 +1,25 @@
+import cProfile
 import concurrent.futures
 import csv
+import os
 import time
 from timeit import default_timer as timer
 from typing import Tuple, List
+from unittest import mock
 
 import pytest
 from _pytest.outcomes import Failed
 from ldap.ldapobject import SimpleLDAPObject
 
+# noinspection PyUnresolvedReferences
+from openvpn_ldap_auth.main import main
 from tests.constants import CONFIG_CHALLENGE_RESPONSE_IGNORE, OPENVPN_LOG_AUTH_SUCCEEDED_CLIENT, \
     OPENVPN_CLIENT_ARGS_WITHOUT_CHALLENGE, PYTHON_VERSION, \
     OPENVPN_VERSION, BENCHMARK_CSV_HEADERS, BENCHMARK_CSV_HEADER_PYTHON, BENCHMARK_CSV_HEADER_OPENVPN, \
     BENCHMARK_CSV_HEADER_MIN, BENCHMARK_CSV_HEADER_MAX, BENCHMARK_CSV_HEADER_AVG, OPENVPN_SERVER_ARGS_VIA_FILE, \
     BENCHMARK_CSV_HEADER_LABEL, BENCHMARK_CSV_HEADER_LOGINS, OPENVPN_SERVER_ARGS_C_PLUGIN, OPENVPN_SERVER_ARGS_VIA_ENV, \
-    OPENVPN_SERVER_ARGS_VIA_FILE_PYINSTALLER, OPENVPN_SERVER_ARGS_VIA_ENV_PYINSTALLER, CONFIG_C
+    OPENVPN_SERVER_ARGS_VIA_FILE_PYINSTALLER, OPENVPN_SERVER_ARGS_VIA_ENV_PYINSTALLER, CONFIG_C, TEST_USERNAME, \
+    TEST_USER_PASSWORD, CONFIG_CHALLENGE_RESPONSE_APPEND
 from tests.utils import Process, OpenVPNProcess
 
 
@@ -61,10 +67,9 @@ def benchmark(openvpn_server: Process, test_users: List[Tuple[str, str]]) -> Tup
 def test_load_script(connection: SimpleLDAPObject, config_c_plugin, openvpn_server: Process, openvpn_server_label: str,
                      config: dict, benchmark_result_file: str, test_users: List[Tuple[str, str]]):
     # benchmark multiple times for a more reliable result
-    measurements = []
-    measurements.append(benchmark(openvpn_server, test_users))
-    measurements.append(benchmark(openvpn_server, test_users))
-    measurements.append(benchmark(openvpn_server, test_users))
+    measurements = [benchmark(openvpn_server, test_users),
+                    benchmark(openvpn_server, test_users),
+                    benchmark(openvpn_server, test_users)]
     min_time = min(measurement[0] for measurement in measurements)
     max_time = max(measurement[1] for measurement in measurements)
     avg_time = sum(measurement[2] for measurement in measurements) / len(measurements)
@@ -85,3 +90,10 @@ def test_load_script(connection: SimpleLDAPObject, config_c_plugin, openvpn_serv
     with open(benchmark_result_file, 'w+', newline='') as results_csv_file:
         writer = csv.DictWriter(results_csv_file, fieldnames=BENCHMARK_CSV_HEADERS)
         writer.writerows(results)
+
+
+@pytest.mark.parametrize("config", [CONFIG_CHALLENGE_RESPONSE_APPEND], indirect=True)
+@mock.patch.dict(os.environ, {'VERB': '11', 'username': TEST_USERNAME, 'password': TEST_USER_PASSWORD})
+def test_profile(config: dict, benchmark_result_file: str):
+    profile_path = os.path.join(os.path.dirname(benchmark_result_file), 'profile.prof')
+    cProfile.runctx('main()', globals(), locals(), filename=profile_path)

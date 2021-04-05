@@ -1,5 +1,6 @@
 import os
 import shutil
+from datetime import datetime
 
 # INPUT PARAMS
 LDAP_URL = os.environ['TEST_LDAP_URL']
@@ -19,7 +20,10 @@ OPENVPN_VERSION = os.environ.get('openvpn_version', 'please set "openvpn_version
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 AUTH_SCRIPT_PATH = shutil.which('openvpn-ldap-auth')
 AUTH_SCRIPT_PATH_PYINSTALLER = shutil.which('openvpn-ldap-auth-pyinstaller')
-BENCHMARK_DIR = os.path.join(os.path.join(SCRIPT_DIR, os.pardir, 'benchmark'))
+BENCHMARK_DIR = os.path.join(
+    SCRIPT_DIR, os.pardir, 'benchmark',
+    f"python{PYTHON_VERSION}-openvpn{OPENVPN_VERSION}-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
+)
 
 # CONSTANTS: SERVER SETUP
 OPENVPN_SERVER_PORT = 1194

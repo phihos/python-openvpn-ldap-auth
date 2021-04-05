@@ -27,4 +27,6 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: benchmark-results
-          path: benchmark/*.png
+          path: |
+            benchmark/*/*.png
+            benchmark/*/*.prof

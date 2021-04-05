@@ -1,6 +1,5 @@
 import csv
 import os
-from datetime import datetime
 from typing import Tuple, List
 
 import plotly.graph_objects as go
@@ -68,7 +67,7 @@ def config_c_plugin(request) -> Process:
 @pytest.fixture(scope='session')
 def benchmark_result_file() -> str:
     os.makedirs(BENCHMARK_DIR, exist_ok=True)
-    path = os.path.join(BENCHMARK_DIR, f"results-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.csv")
+    path = os.path.join(BENCHMARK_DIR, f"results.csv")
     with open(path, 'w+', newline='') as results_csv_file:
         writer = csv.DictWriter(results_csv_file, fieldnames=BENCHMARK_CSV_HEADERS)
         writer.writeheader()
@@ -81,7 +80,7 @@ def benchmark_result_file() -> str:
             plot_x.append(row[BENCHMARK_CSV_HEADER_LABEL])
             plot_y.append(round(float(row[BENCHMARK_CSV_HEADER_AVG]), 2))
 
-    fig = go.Figure(data=[go.Bar(x=plot_x, y=plot_y)])
+    fig = go.Figure(data=[go.Bar(x=plot_x, y=plot_y, text=plot_y, textposition='auto')])
     fig.update_xaxes(type='category', categoryorder='total ascending')
     fig.update_layout(
         title=f"Python {PYTHON_VERSION} & OpenVPN {OPENVPN_VERSION}",
