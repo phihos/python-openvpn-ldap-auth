@@ -5,7 +5,7 @@ services:
     container_name: "openvpn-${python_version}-${openvpn_version}"
     build:
       context: ../../../
-      dockerfile: tests/resources/docker/openvpn/Dockerfile
+      dockerfile: "tests/resources/docker/openvpn/Dockerfile"
       args:
         python_version: "${python_version}"
         openvpn_version: "${openvpn_version}"
@@ -13,6 +13,8 @@ services:
     cap_add:
       - NET_ADMIN
     environment:
+      - python_version
+      - openvpn_version
       - TEST_LDAP_URL=ldap://openldap:1389
       - TEST_LDAP_BASE_DN=dc=example,dc=org
       - TEST_LDAP_ADMIN_DN=cn=admin,dc=example,dc=org
