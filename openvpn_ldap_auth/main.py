@@ -2,6 +2,7 @@
 import logging
 import os
 import sys
+import traceback
 from base64 import b64decode
 
 import ldap
@@ -123,7 +124,7 @@ class Config:
 
     @staticmethod
     def from_file(path: str):
-        with open(path, 'r') as stream:
+        with open(path, 'r', encoding='utf-8') as stream:
             config = yaml.safe_load(stream)
         return Config(config=config)
 
@@ -150,7 +151,7 @@ class OpenVPNParameters:
         self._raw_password = os.environ['password']
 
     def _extract_credentials_from_input_file(self):
-        tmp_file = open(sys.argv[1], 'r')
+        tmp_file = open(sys.argv[1], 'r', encoding='utf-8')
         lines = tmp_file.readlines()
         self.user = lines[0].strip()
         self._raw_password = lines[1].strip()
@@ -235,6 +236,7 @@ def main():
         authenticator.authenticate(vpn_params.user, vpn_params.full_password)
     except Exception as e:
         logging.error(f"Exception while authenticating: {e}")
+        traceback.print_exc()
         sys.exit(1)
     sys.exit(0)
 
