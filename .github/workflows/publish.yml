@@ -19,7 +19,6 @@ jobs:
         os:
           - ubuntu-20.04
           - ubuntu-18.04
-          - ubuntu-16.04
     steps:
       - uses: actions/checkout@v2
       - name: Set env
@@ -48,7 +47,6 @@ jobs:
         os:
           - ubuntu-20.04
           - ubuntu-18.04
-          - ubuntu-16.04
     steps:
       - uses: actions/checkout@v2
       - name: Set env
@@ -57,10 +55,12 @@ jobs:
           cat /etc/os-release | grep UBUNTU_CODENAME >> $GITHUB_ENV
       - name: Install dependencies
         run: |
-          sudo apt install python3 python3-pip python3-dev libsasl2-dev libldap2-dev libssl-dev upx
+          sudo apt install python3 python3-pip python3-setuptools python3-dev libsasl2-dev libldap2-dev libssl-dev upx
           sudo pip3 install poetry
       - name: Generate DEB package
         run: ./package-deb.sh
+      - name: Test DEB package
+        run: sudo dpkg -i deb_dist/python3-openvpn-ldap-auth_${{ env.RELEASE_VERSION }}-1_all.deb
       - name: Upload DEB package to release
         uses: svenstaro/upload-release-action@v2
         with:
