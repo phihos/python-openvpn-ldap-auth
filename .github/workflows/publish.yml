@@ -34,19 +34,37 @@ jobs:
           sudo apt install libsasl2-dev python-dev libldap2-dev libssl-dev upx
       - name: Compile binary
         run: ./pyinstaller.sh
-      - name: Generate DEB package
-        run: ./package-deb.sh
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: dist/openvpn-ldap-auth
-          asset_name: openvpn-ldap-auth-${{ matrix.os }}-amd64
+          asset_name: openvpn-ldap-auth-${{ env.RELEASE_VERSION }}-${{ matrix.os }}-amd64
           tag: ${{ github.ref }}
+  debian_package:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-20.04
+          - ubuntu-18.04
+          - ubuntu-16.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set env
+        run: |
+          echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+          cat /etc/os-release | grep UBUNTU_CODENAME >> $GITHUB_ENV
+      - name: Install dependencies
+        run: |
+          sudo apt install python3 python3-pip python3-dev libsasl2-dev libldap2-dev libssl-dev upx
+          sudo pip3 install poetry
+      - name: Generate DEB package
+        run: ./package-deb.sh
       - name: Upload DEB package to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: deb_dist/python3-openvpn-ldap-auth_${{ env.RELEASE_VERSION }}-1_all.deb
-          asset_name: python3-openvpn-ldap-auth_${{ env.RELEASE_VERSION }}-1${{ matrix.os }}_all.deb
+          asset_name: python3-openvpn-ldap-auth_${{ env.RELEASE_VERSION }}-1${{ env.UBUNTU_CODENAME }}_all.deb
           tag: ${{ github.ref }}
