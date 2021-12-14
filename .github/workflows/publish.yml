@@ -58,7 +58,7 @@ jobs:
           cat /etc/os-release | grep UBUNTU_CODENAME >> $GITHUB_ENV
       - name: Install dependencies
         run: |
-          sudo apt install python3 python3-pip python3-setuptools python3-dev libsasl2-dev libldap2-dev libssl-dev upx
+          sudo apt install python3 python3-pip python3-setuptools python3-all python3-dev libsasl2-dev libldap2-dev libssl-dev upx
           sudo pip3 install poetry
       - name: Generate DEB package
         run: ./package-deb.sh
