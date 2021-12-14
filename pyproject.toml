@@ -44,12 +44,13 @@ stdeb = "^0.10.0"
 legacy_tox_ini = """
 [tox]
 isolated_build = true
-envlist = python{37,38,39}-openvpn{24,25}
+envlist = python{36,37,38,39}-openvpn{24,25}
 basepython = python3
 
-[testenv:python{37,38,39}-openvpn{24,25}]
+[testenv:python{36,37,38,39}-openvpn{24,25}]
 skip_install = true
 setenv =
+    python36: python_version=3.6
     python37: python_version=3.7
     python38: python_version=3.8
     python39: python_version=3.9
