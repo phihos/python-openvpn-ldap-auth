@@ -1,8 +1,7 @@
 name: Python Package
 on:
-  push:
-    tags:
-      - 'v*.*.*'
+  - push
+  - pull_request
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,13 +15,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install poetry
           sudo apt install libsasl2-dev python-dev libldap2-dev libssl-dev upx
-      - name: Build and publish to pypi
+      - name: Build
         env:
           POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
         run: |
           poetry install --no-dev
           poetry build
-          poetry publish
+      - name: publish to pypi
+        if: startsWith(github.ref, 'refs/tags/')
+        run: poetry publish
   pyinstaller:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -47,7 +48,9 @@ jobs:
         run: sudo apt install python-dev
       - name: Compile binary
         run: ./pyinstaller.sh
+      - name: publish to pypi
       - name: Upload binaries to release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -78,6 +81,7 @@ jobs:
       - name: Test DEB package
         run: sudo apt install ./deb_dist/python3-openvpn-ldap-auth_${{ env.RELEASE_VERSION }}-1_all.deb
       - name: Upload DEB package to release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
