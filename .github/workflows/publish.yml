@@ -42,7 +42,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install poetry
-          sudo apt install libsasl2-dev python-dev libldap2-dev libssl-dev upx
+          sudo apt install libsasl2-dev libldap2-dev libssl-dev upx
+      - if: ${{ matrix.os == 'ubuntu-18.04' }}
+        run: sudo apt install python-dev
       - name: Compile binary
         run: ./pyinstaller.sh
       - name: Upload binaries to release
@@ -69,7 +71,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt install python3 python3-pip python3-setuptools python3-all python3-dev debhelper dh-python libsasl2-dev libldap2-dev libssl-dev upx
-          sudo pip3 install poetry
+          sudo pip3 install setuptools==45.2.0
+          sudo pip3 install poetry setuptools=--install-layout
       - name: Generate DEB package
         run: ./package-deb.sh
       - name: Test DEB package
