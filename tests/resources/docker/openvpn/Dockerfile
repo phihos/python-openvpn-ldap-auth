@@ -17,6 +17,6 @@ RUN mkdir /project
 WORKDIR /project
 COPY pyproject.toml poetry.lock README.md /project/
 COPY openvpn_ldap_auth /project/openvpn_ldap_auth
-RUN poetry export -f requirements.txt --output requirements.txt
-RUN pip install -r requirements.txt
+RUN poetry export --without-hashes -f requirements.txt --output requirements.txt
+RUN pip install  -r requirements.txt
 RUN poetry install
