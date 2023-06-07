@@ -60,7 +60,7 @@ setenv =
     openvpn23: openvpn_version=2.3
     openvpn24: openvpn_version=2.4
     openvpn25: openvpn_version=2.5
-whitelist_externals =
+allowlist_externals =
     docker-compose
     bash
 commands_pre:
