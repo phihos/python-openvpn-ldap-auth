@@ -12,7 +12,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -yq openvpn
                                                         libssl-dev openvpn-auth-ldap
 
 # prepare environment
-RUN pip install poetry==1.5.1
+RUN pip install poetry==1.1.15
 RUN mkdir /project
 WORKDIR /project
 COPY pyproject.toml poetry.lock README.md /project/
