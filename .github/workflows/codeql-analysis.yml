@@ -21,7 +21,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
       - name: Install dependencies
-        run: sudo apt install libsasl2-dev python-dev libldap2-dev libssl-dev
+        run: sudo apt install libsasl2-dev python3-dev libldap2-dev libssl-dev
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v1
         with:
