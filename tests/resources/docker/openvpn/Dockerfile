@@ -1,6 +1,6 @@
 ARG python_version
 
-FROM python:${python_version}-buster
+FROM python:${python_version}
 
 ARG openvpn_version
 
