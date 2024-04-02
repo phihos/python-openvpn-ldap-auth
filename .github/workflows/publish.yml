@@ -74,7 +74,7 @@ jobs:
         run: |
           sudo apt install python3 python3-pip python3-setuptools python3-all python3-dev debhelper dh-python libsasl2-dev libldap2-dev libssl-dev upx
           sudo pip3 install setuptools==45.2.0
-          sudo pip3 install poetry setuptools=--install-layout
+          sudo pip3 install poetry
       - name: Generate DEB package
         run: ./package-deb.sh
       - name: Test DEB package
