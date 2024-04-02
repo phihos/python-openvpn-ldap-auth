@@ -72,7 +72,7 @@ jobs:
           cat /etc/os-release | grep UBUNTU_CODENAME >> $GITHUB_ENV
       - name: Generate DEB package
         run: |
-          sudo apt install python3-pip ruby-rubygems
+          sudo apt install python3-pip ruby
           sudo gem install fpm
           fpm -s python -t deb --python-bin=python3 openvpn-ldap-auth==${{ env.RELEASE_VERSION }}
       - name: Test DEB package
