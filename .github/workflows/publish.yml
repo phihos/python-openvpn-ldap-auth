@@ -70,19 +70,13 @@ jobs:
         run: |
           echo "RELEASE_VERSION=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
           cat /etc/os-release | grep UBUNTU_CODENAME >> $GITHUB_ENV
-      - name: Install dependencies
-        run: |
-          sudo apt install python3 python3-pip python3-setuptools python3-all python3-dev debhelper dh-python libsasl2-dev libldap2-dev libssl-dev upx
-          sudo pip3 install setuptools==45.2.0
-          sudo pip3 install poetry
       - name: Generate DEB package
         run: |
-          curl -sSL https://raw.githubusercontent.com/upciti/wakemeops/main/assets/install_repository | sudo bash
-          sudo apt-get update
-          sudo apt install wheel2deb
-          ./package-deb.sh
+          sudo apt install python3-pip ruby-rubygems
+          sudo gem install fpm
+          fpm -s python -t deb --python-bin=python3 openvpn-ldap-auth==${{ env.RELEASE_VERSION }}
       - name: Test DEB package
-        run: sudo apt install ./output/python3-openvpn-ldap-auth_${{ env.RELEASE_VERSION }}-1_all.deb
+        run: sudo apt install ./python-openvpn-ldap-auth_${{ env.RELEASE_VERSION }}_all.deb
       - name: Upload DEB package to release
         if: startsWith(github.ref, 'refs/tags/')
         uses: svenstaro/upload-release-action@v2
