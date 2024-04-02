@@ -794,17 +794,17 @@ testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "requests", "xm
 
 [[package]]
 name = "pytest-timeout"
-version = "1.4.2"
-description = "py.test plugin to abort hanging tests"
+version = "2.2.0"
+description = "pytest plugin to abort hanging tests"
 optional = false
-python-versions = "*"
+python-versions = ">=3.7"
 files = [
-    {file = "pytest-timeout-1.4.2.tar.gz", hash = "sha256:20b3113cf6e4e80ce2d403b6fb56e9e1b871b510259206d40ff8d609f48bda76"},
-    {file = "pytest_timeout-1.4.2-py2.py3-none-any.whl", hash = "sha256:541d7aa19b9a6b4e475c759fd6073ef43d7cdc9a92d95644c260076eb257a063"},
+    {file = "pytest-timeout-2.2.0.tar.gz", hash = "sha256:3b0b95dabf3cb50bac9ef5ca912fa0cfc286526af17afc806824df20c2f72c90"},
+    {file = "pytest_timeout-2.2.0-py3-none-any.whl", hash = "sha256:bde531e096466f49398a59f2dde76fa78429a09a12411466f88a07213e220de2"},
 ]
 
 [package.dependencies]
-pytest = ">=3.6.0"
+pytest = ">=5.0.0"
 
 [[package]]
 name = "python-ldap"
@@ -1143,4 +1143,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">= 3.8, < 3.13"
-content-hash = "0e036e2a2b1c603a6b02db83b7efb3dd85c4ac50251635086a5e9e209c35e1c3"
+content-hash = "7e8bc1b92217feac98118d79a4169f50489d25ae63c70c6f766f58b1a602063c"
