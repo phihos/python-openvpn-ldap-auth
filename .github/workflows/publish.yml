@@ -76,9 +76,13 @@ jobs:
           sudo pip3 install setuptools==45.2.0
           sudo pip3 install poetry
       - name: Generate DEB package
-        run: ./package-deb.sh
+        run: |
+          curl -sSL https://raw.githubusercontent.com/upciti/wakemeops/main/assets/install_repository | sudo bash
+          sudo apt-get update
+          sudo apt install wheel2deb
+          ./package-deb.sh
       - name: Test DEB package
-        run: sudo apt install ./deb_dist/python3-openvpn-ldap-auth_${{ env.RELEASE_VERSION }}-1_all.deb
+        run: sudo apt install ./output/python3-openvpn-ldap-auth_${{ env.RELEASE_VERSION }}-1_all.deb
       - name: Upload DEB package to release
         if: startsWith(github.ref, 'refs/tags/')
         uses: svenstaro/upload-release-action@v2
