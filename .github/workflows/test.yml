@@ -9,10 +9,11 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - 36
-          - 37
           - 38
           - 39
+          - 310
+          - 311
+          - 312
         openvpn-version:
           - 24
           - 25
