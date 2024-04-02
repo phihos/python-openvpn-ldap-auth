@@ -26,37 +26,37 @@ packages = [{ include = "openvpn_ldap_auth" }, ]
 openvpn-ldap-auth = 'openvpn_ldap_auth.main:main'
 
 [tool.poetry.dependencies]
-python = "^3.6.2"
-PyYAML = "^5.4.1"
+python = ">= 3.8, < 3.13"
+PyYAML = "^6.0.1"
 python-ldap = "^3.3.1"
 Cerberus = "^1.3.2"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "^6.2"
 pytest-timeout = "^1.4.2"
 pexpect = "^4.8.0"
-pyinstaller = "^4.2"
+pyinstaller = "^6.5.0"
 plotly = "^4.14.3"
 kaleido = "0.2.1"
 stdeb = "^0.10.0"
-
-[tool.poetry.group.dev.dependencies]
+tox = "^4.14.2"
 black = {version = "22.8.0", extras = ["d"]}
 
 [tool.tox]
 legacy_tox_ini = """
 [tox]
 isolated_build = true
-envlist = python{36,37,38,39}-openvpn{24,25}
+envlist = python{38,39,310,311,312}-openvpn{24,25}
 basepython = python3
 
-[testenv:python{36,37,38,39}-openvpn{24,25}]
+[testenv:python{38,39,310,311,312}-openvpn{24,25}]
 skip_install = true
 setenv =
-    python36: python_version=3.6
-    python37: python_version=3.7
     python38: python_version=3.8
     python39: python_version=3.9
+    python310: python_version=3.10
+    python311: python_version=3.11
+    python312: python_version=3.12
     openvpn23: openvpn_version=2.3
     openvpn24: openvpn_version=2.4
     openvpn25: openvpn_version=2.5
@@ -67,7 +67,7 @@ commands_pre:
     docker-compose -f tests/resources/docker/docker-compose.yml up -d --build
     docker-compose -f tests/resources/docker/docker-compose.yml run openvpn bash -c 'openvpn --version || true'
 commands =
-    docker-compose -f tests/resources/docker/docker-compose.yml run openvpn bash -c 'poetry install && poetry build && ./pyinstaller.sh && mv dist/openvpn-ldap-auth /usr/bin/openvpn-ldap-auth-pyinstaller && pip install --upgrade --find-links=dist openvpn-ldap-auth && poetry run pytest {posargs}'
+    docker-compose -f tests/resources/docker/docker-compose.yml run openvpn bash -c 'poetry install && poetry build && ./pyinstaller.sh && mv dist/openvpn-ldap-auth /usr/bin/openvpn-ldap-auth-pyinstaller && pip install --upgrade dist/*.whl && poetry run pytest {posargs}'
 commands_post:
     bash -c "docker-compose -f tests/resources/docker/docker-compose.yml run openvpn chown -R $UID /project"
     docker-compose -f tests/resources/docker/docker-compose.yml down

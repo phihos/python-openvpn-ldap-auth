@@ -1,6 +1,6 @@
 ARG python_version
 
-FROM python:${python_version}-buster
+FROM python:${python_version}
 
 ARG openvpn_version
 
@@ -8,7 +8,7 @@ ARG openvpn_version
 RUN wget -O - https://swupdate.openvpn.net/repos/repo-public.gpg|apt-key add -
 RUN echo "deb http://build.openvpn.net/debian/openvpn/release/$openvpn_version buster main" > /etc/apt/sources.list.d/openvpn-aptrepo.list
 RUN cat /etc/apt/sources.list.d/openvpn-aptrepo.list
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -yq openvpn libsasl2-dev python-dev libldap2-dev \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -yq openvpn libsasl2-dev python3-dev libldap2-dev \
                                                         libssl-dev openvpn-auth-ldap
 
 # prepare environment
