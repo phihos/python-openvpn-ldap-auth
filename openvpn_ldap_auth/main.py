@@ -208,6 +208,7 @@ class LDAPAuthenticator:
     ) -> SimpleLDAPObject:
         con = ldap.initialize(self._ldap_url)
         con.set_option(ldap.OPT_NETWORK_TIMEOUT, self._timeout)
+        con.set_option(ldap.OPT_TIMEOUT, self._timeout)
         try:
             con.simple_bind_s(bind_dn, password)
         except ldap.INVALID_CREDENTIALS:
@@ -217,7 +218,7 @@ class LDAPAuthenticator:
         return con
 
     def _find_user(self, username):
-        results = self._connection.search_s(
+        results = self._connection.search_st(
             base=self._user_search_base,
             scope=ldap.SCOPE_SUBTREE,
             filterstr=self._user_search_template.format(escape_filter_chars(username)),

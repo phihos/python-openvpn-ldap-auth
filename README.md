@@ -35,7 +35,7 @@ ldap:
   url: 'ldaps://first.ldap.tld:636/ ldaps://second.ldap.tld:636/'
   bind_dn: 'uid=readonly,dc=example,dc=org'
   password: 'somesecurepassword'
-  timeout: 5 # optional
+  timeout: 5 # (optional) wait this many seconds for connection and response
 authorization:
   base_dn: 'ou=people,dc=example,dc=org'
   search_filter: '(uid={})' # optional, {} will be replaced with the username
