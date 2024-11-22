@@ -30,7 +30,7 @@ jobs:
       - name: Archive benchmark results
         uses: actions/upload-artifact@v4
         with:
-          name: benchmark-results-${{ matrix.python-version }}
+          name: benchmark-results-python${{ matrix.python-version }}-openvpn${{ matrix.openvpn-version }}
           path: |
             benchmark/*/*.png
             benchmark/*/*.prof
