@@ -37,7 +37,7 @@ pytest-timeout = ">=1.4.2,<3.0.0"
 pexpect = "^4.8.0"
 pyinstaller = "^6.5.0"
 plotly = ">=4.14.3,<6.0.0"
-kaleido = "0.2.1"
+kaleido = "0.2.1.post1"
 stdeb = "^0.10.0"
 tox = "^4.14.2"
 black = {version = "24.4.2", extras = ["d"]}
