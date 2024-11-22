@@ -28,7 +28,7 @@ jobs:
       - name: Test with tox
         run: tox -e python${{ matrix.python-version }}-openvpn${{ matrix.openvpn-version }}
       - name: Archive benchmark results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: benchmark-results
           path: |
