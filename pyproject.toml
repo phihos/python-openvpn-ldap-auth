@@ -40,7 +40,7 @@ plotly = ">=4.14.3,<6.0.0"
 kaleido = "0.2.1"
 stdeb = "^0.10.0"
 tox = "^4.14.2"
-black = {version = "24.4.2", extras = ["d"]}
+black = {version = "24.8.0", extras = ["d"]}
 
 [tool.tox]
 legacy_tox_ini = """
