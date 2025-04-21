@@ -72,7 +72,7 @@ Download or clone this repository, cd into it and run
 
 ```shell
 pip install poetry
-poetry install --no-dev
+poetry install --without dev
 poetry build
 pip install --upgrade --find-links=dist openvpn-ldap-auth
 ```
