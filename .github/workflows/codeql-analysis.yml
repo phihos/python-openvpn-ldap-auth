@@ -19,7 +19,7 @@ jobs:
         language: [ 'python' ]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Install dependencies
         run: sudo apt install libsasl2-dev python3-dev libldap2-dev libssl-dev
       - name: Initialize CodeQL
