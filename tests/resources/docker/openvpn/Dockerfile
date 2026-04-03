@@ -4,15 +4,17 @@ FROM python:${python_version}
 
 ARG openvpn_version
 
-# install openvpn
-RUN wget -O - https://swupdate.openvpn.net/repos/repo-public.gpg|apt-key add -
-RUN echo "deb http://build.openvpn.net/debian/openvpn/release/$openvpn_version buster main" > /etc/apt/sources.list.d/openvpn-aptrepo.list
-RUN cat /etc/apt/sources.list.d/openvpn-aptrepo.list
+# install openvpn from the official OpenVPN repository
+RUN CODENAME=$(. /etc/os-release && echo "$VERSION_CODENAME") && \
+    wget -qO /usr/share/keyrings/openvpn-repo.gpg https://swupdate.openvpn.net/repos/repo-public.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/openvpn-repo.gpg] http://build.openvpn.net/debian/openvpn/release/$openvpn_version $CODENAME main" \
+      > /etc/apt/sources.list.d/openvpn-aptrepo.list && \
+    cat /etc/apt/sources.list.d/openvpn-aptrepo.list
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -yq openvpn libsasl2-dev python3-dev libldap2-dev \
                                                         libssl-dev openvpn-auth-ldap
 
 # prepare environment
-RUN pip install poetry==1.5.1
+RUN pip install poetry poetry-plugin-export
 RUN mkdir /project
 WORKDIR /project
 COPY pyproject.toml poetry.lock README.md /project/
