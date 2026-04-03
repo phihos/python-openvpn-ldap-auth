@@ -132,7 +132,7 @@ tox
 To run a specific Python-OpenVPN combination run something like
 
 ```shell
-tox -e python38-openvpn25
+tox -e python312-openvpn26
 ```
 
 To see a full list of current environment see the `tool.tox` section in [pyproject.toml](pyproject.toml).
