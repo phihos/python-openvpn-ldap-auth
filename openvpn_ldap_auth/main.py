@@ -144,15 +144,15 @@ class OpenVPNParameters:
         else:
             self._extract_credentials_from_input_file()
         self._decode_password()
-        self._extract_other_parameters_from_evironment()
+        self._extract_other_parameters_from_environment()
 
     def _extract_credentials_from_environment(self):
         self.user = os.environ["username"]
         self._raw_password = os.environ["password"]
 
     def _extract_credentials_from_input_file(self):
-        tmp_file = open(sys.argv[1], "r", encoding="utf-8")
-        lines = tmp_file.readlines()
+        with open(sys.argv[1], "r", encoding="utf-8") as tmp_file:
+            lines = tmp_file.readlines()
         self.user = lines[0].strip()
         self._raw_password = lines[1].strip()
 
@@ -166,7 +166,7 @@ class OpenVPNParameters:
             logging.debug("Using password verbatim")
             self._password = self._raw_password
 
-    def _extract_other_parameters_from_evironment(self):
+    def _extract_other_parameters_from_environment(self):
         self.verbosity = int(os.environ.get("verb", 1))
         self.config_file = os.environ["config"] if "config" in os.environ else None
 
@@ -175,13 +175,13 @@ class OpenVPNParameters:
         """Concatenate the actual password with the challenge response if applicable."""
         if self._challenge_response:
             if self.static_challenge_mode == STATIC_CHALLENGE_IGNORE:
-                logging.debug("Ignoring challenge reponse")
+                logging.debug("Ignoring challenge response")
                 return self._password
             elif self.static_challenge_mode == STATIC_CHALLENGE_PREPEND:
-                logging.debug("Prepending challenge reponse")
+                logging.debug("Prepending challenge response")
                 return self._challenge_response + self._password
             else:
-                logging.debug("Appending challenge reponse")
+                logging.debug("Appending challenge response")
                 return self._password + self._challenge_response
         else:
             return self._password
