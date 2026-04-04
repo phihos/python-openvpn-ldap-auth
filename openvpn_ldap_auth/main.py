@@ -29,7 +29,7 @@ def setup_logging(verbosity: int):
     elif verbosity == 3:
         level = logging.INFO
     else:
-        level = logging.WARN
+        level = logging.WARNING
     logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s", level=level)
 
 
@@ -211,10 +211,10 @@ class LDAPAuthenticator:
         con.set_option(ldap.OPT_TIMEOUT, self._timeout)
         try:
             con.simple_bind_s(bind_dn, password)
-        except ldap.INVALID_CREDENTIALS:
-            raise LDAPException(f"Invalid password for {bind_dn}")
+        except ldap.INVALID_CREDENTIALS as e:
+            raise LDAPException(f"Invalid password for {bind_dn}") from e
         except ldap.LDAPError as e:
-            raise LDAPException(f"Simple bind failed for {bind_dn}: {e}")
+            raise LDAPException(f"Simple bind failed for {bind_dn}: {e}") from e
         return con
 
     def _find_user(self, username):
