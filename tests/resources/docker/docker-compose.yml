@@ -1,5 +1,3 @@
-version: "3"
-
 services:
   openvpn:
     container_name: "openvpn-${python_version}-${openvpn_version}"
