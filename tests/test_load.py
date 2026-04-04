@@ -93,7 +93,7 @@ def test_load_script(connection: SimpleLDAPObject, config_c_plugin, openvpn_serv
 
 
 @pytest.mark.parametrize("config", [CONFIG_CHALLENGE_RESPONSE_APPEND], indirect=True)
-@mock.patch.dict(os.environ, {'VERB': '11', 'username': TEST_USERNAME, 'password': TEST_USER_PASSWORD})
+@mock.patch.dict(os.environ, {'verb': '11', 'username': TEST_USERNAME, 'password': TEST_USER_PASSWORD})
 def test_profile(config: dict, benchmark_result_file: str):
     profile_path = os.path.join(os.path.dirname(benchmark_result_file), 'profile.prof')
     cProfile.runctx('main()', globals(), locals(), filename=profile_path)
