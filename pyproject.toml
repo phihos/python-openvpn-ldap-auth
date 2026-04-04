@@ -26,7 +26,7 @@ packages = [{ include = "openvpn_ldap_auth" }, ]
 openvpn-ldap-auth = 'openvpn_ldap_auth.main:main'
 
 [tool.poetry.dependencies]
-python = ">= 3.9, < 3.14"
+python = ">= 3.10, < 3.14"
 PyYAML = "^6.0.1"
 python-ldap = "^3.3.1"
 Cerberus = "^1.3.2"
@@ -41,20 +41,19 @@ plotly = ">=4.14.3,<7.0.0"
 kaleido = "0.2.1"
 stdeb = "^0.10.0"
 tox = "^4.14.2"
-black = {version = ">=26.3.1", extras = ["d"], python = ">=3.10"}
+black = {version = ">=26.3.1", extras = ["d"]}
 setuptools = ">=78.1.1"
 
 [tool.tox]
 legacy_tox_ini = """
 [tox]
 isolated_build = true
-envlist = python{39,310,311,312,313}-openvpn{26}
+envlist = python{310,311,312,313}-openvpn{26}
 basepython = python3
 
-[testenv:python{39,310,311,312,313}-openvpn{26}]
+[testenv:python{310,311,312,313}-openvpn{26}]
 skip_install = true
 setenv =
-    python39: python_version=3.9
     python310: python_version=3.10
     python311: python_version=3.11
     python312: python_version=3.12

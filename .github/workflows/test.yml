@@ -9,7 +9,6 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - 39
           - 310
           - 311
           - 312
