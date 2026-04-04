@@ -61,16 +61,16 @@ setenv =
     python313: python_version=3.13
     openvpn26: openvpn_version=2.6
 allowlist_externals =
-    docker-compose
+    docker
     bash
 commands_pre:
-    docker-compose -f tests/resources/docker/docker-compose.yml up -d --build
-    docker-compose -f tests/resources/docker/docker-compose.yml run openvpn bash -c 'openvpn --version || true'
+    docker compose -f tests/resources/docker/docker-compose.yml up -d --build
+    docker compose -f tests/resources/docker/docker-compose.yml run openvpn bash -c 'openvpn --version || true'
 commands =
-    docker-compose -f tests/resources/docker/docker-compose.yml run openvpn bash -c 'poetry install && poetry build && ./pyinstaller.sh && mv dist/openvpn-ldap-auth /usr/bin/openvpn-ldap-auth-pyinstaller && pip install --upgrade dist/*.whl && poetry run pytest {posargs}'
+    docker compose -f tests/resources/docker/docker-compose.yml run openvpn bash -c 'poetry install && poetry build && ./pyinstaller.sh && mv dist/openvpn-ldap-auth /usr/bin/openvpn-ldap-auth-pyinstaller && pip install --upgrade dist/*.whl && poetry run pytest {posargs}'
 commands_post:
-    bash -c "docker-compose -f tests/resources/docker/docker-compose.yml run openvpn chown -R $UID /project"
-    docker-compose -f tests/resources/docker/docker-compose.yml down
+    bash -c "docker compose -f tests/resources/docker/docker-compose.yml run openvpn chown -R $UID /project"
+    docker compose -f tests/resources/docker/docker-compose.yml down
 """
 
 [build-system]
