@@ -700,13 +700,14 @@ type = ["importlib_metadata (>=7.0.2) ; python_version < \"3.10\"", "jaraco.deve
 
 [[package]]
 name = "stdeb"
-version = "0.10.0"
+version = "0.11.0"
 description = "Python to Debian source package conversion utility"
 optional = false
 python-versions = "*"
 groups = ["dev"]
 files = [
-    {file = "stdeb-0.10.0.tar.gz", hash = "sha256:08c22c9c03b28a140fe3ec5064b53a5288279f22e596ca06b0be698d50c93cf2"},
+    {file = "stdeb-0.11.0-py3-none-any.whl", hash = "sha256:3f883c522ecb76394514ea4d282eda7671c8bd0db0fd904f9774ba20e02035e6"},
+    {file = "stdeb-0.11.0.tar.gz", hash = "sha256:e7084e24f1616ab599d3f390599363b39670905179c261d23cd8ddcc0ecb3b71"},
 ]
 
 [[package]]
@@ -815,4 +816,4 @@ typing-extensions = {version = ">=4.13.2", markers = "python_version < \"3.11\""
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.10, < 3.14"
-content-hash = "b8b70b3b2bf09f777666327aff94281ede6d9ecf3e9c71cd81122bbf803e9c28"
+content-hash = "2def4d25639987c3fcf910c95a6f79a7cec2668fb061c1d3aaa84d3f34230a22"
