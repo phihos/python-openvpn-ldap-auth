@@ -4,7 +4,7 @@
 [![PyPI status](https://img.shields.io/pypi/status/openvpn-ldap-auth.svg)](https://pypi.python.org/pypi/openvpn-ldap-auth/)
 [![PyPI version shields.io](https://img.shields.io/pypi/v/openvpn-ldap-auth.svg)](https://pypi.python.org/pypi/openvpn-ldap-auth/)
 [![PyPI pyversions](https://img.shields.io/pypi/pyversions/openvpn-ldap-auth.svg)](https://pypi.python.org/pypi/openvpn-ldap-auth/)
-![main build status](https://github.com/phihos/Python-OpenVPN-LDAP-Auth/actions/workflows/test.yml/badge.svg?branch=main)
+![main build status](https://github.com/phihos/python-openvpn-ldap-auth/actions/workflows/ci.yml/badge.svg?branch=main)
 
 An auth verify script for [OpenVPN](https://community.openvpn.net) to authenticate via LDAP. Each VPN login is
 forwarded to this script and the script in turn attempts a simple bind against the specified LDAP server. When the bind
@@ -22,10 +22,11 @@ If you are fine with that go ahead.
 
 ## Quickstart
 
-Install the package via pip:
+Install the package (Python 3.11+, python-ldap needs the OpenLDAP and SASL headers to build):
 
 ```shell
-pip install openvpn-ldap-auth
+apt install libldap-dev libsasl2-dev   # Debian/Ubuntu
+pipx install openvpn-ldap-auth         # or: uv tool install openvpn-ldap-auth
 ```
 
 Then create `/etc/openvpn/ldap.yaml`:
@@ -38,9 +39,12 @@ ldap:
   timeout: 5 # (optional) wait this many seconds for connection and response
 authorization:
   base_dn: 'ou=people,dc=example,dc=org'
-  search_filter: '(uid={})' # optional, {} will be replaced with the username
+  search_filter: '(uid={})' # optional, {} will be replaced with the (escaped) username and is required
   static_challenge: 'ignore' # optional, other values are prepend, append 
 ```
+
+The file contains the bind password, so make it readable for the OpenVPN user only.
+Unknown keys are rejected, so typos fail loudly instead of being silently ignored.
 
 Find out where `openvpn-ldap-auth` lives:
 
@@ -62,7 +66,7 @@ Now you can start your OpenVPN server and try to connect with a client.
 ### Single Executable
 
 For those who wish to [sacrifice a little more performance](https://pyinstaller.readthedocs.io/en/stable/operating-mode.html#how-the-one-file-program-works) for not having to install or compile a Python interpreter or you just want to quickly try the script out this option might be interesting.
-Each [release](https://github.com/phihos/python-openvpn-ldap-auth/releases) also has executables attached to it: *openvpn-ldap-auth-&lt;distro&gt;-&lt;distro-version&gt;-&lt;arch&gt;*. They are created via [PyInstaller](https://www.pyinstaller.org/) on the respective Linux distro, version and architecture. They might also work on other distros provided they use the same or a later libc version that the distro uses.
+Each [release](https://github.com/phihos/python-openvpn-ldap-auth/releases) also has executables attached to it: *openvpn-ldap-auth-&lt;version&gt;-ubuntu-&lt;ubuntu-version&gt;-&lt;amd64|arm64&gt;*. They are created via [PyInstaller](https://www.pyinstaller.org/) on the respective Ubuntu version and architecture. They also work on other distros that use the same or a later glibc version.
 
 **Important: /tmp must not be read only.**
 
@@ -71,13 +75,9 @@ Each [release](https://github.com/phihos/python-openvpn-ldap-auth/releases) also
 Download or clone this repository, cd into it and run
 
 ```shell
-pip install poetry
-poetry install --without dev
-poetry build
-pip install --upgrade --find-links=dist openvpn-ldap-auth
+uv build
+pipx install dist/openvpn_ldap_auth-*.whl
 ```
-
-Exchange `pip` with `pip3` if applicable.
 
 ## Configuration
 
@@ -119,20 +119,31 @@ make the environment of a process publicly visible to other unprivileged process
 
 If you still want to use `via-env` make sure to set `script-security` to `3`.
 
-## Running Tests
+## Development
 
-First make sure to install [Docker](https://docs.docker.com/engine/install/)
-with [docker-compose](https://docs.docker.com/compose/install/)
-and [tox](https://tox.readthedocs.io/en/latest/install.html). Then run
+Install [uv](https://docs.astral.sh/uv/), then:
 
 ```shell
-tox
+uv run pytest            # fast unit tests
+uv run ruff format       # format
+uv run ruff check        # lint
+uv run mypy              # type-check
 ```
 
-To run a specific Python-OpenVPN combination run something like
+The system tests start a real OpenVPN server and client plus OpenLDAP in
+[Docker](https://docs.docker.com/engine/install/) (with the compose plugin), test the
+script installed from the built wheel and as a PyInstaller binary, and benchmark both against the
+[openvpn-auth-ldap](https://github.com/threerings/openvpn-auth-ldap) C plugin:
 
 ```shell
-tox -e python312-openvpn26
+tests/system/run.sh                  # Python 3.14, OpenVPN 2.6
+tests/system/run.sh 3.11 2.7 -k env  # any Python/OpenVPN combination, extra args go to pytest
 ```
 
-To see a full list of current environment see the `tool.tox` section in [pyproject.toml](pyproject.toml).
+Benchmark results land in `benchmark/`.
+
+## Releasing
+
+Bump `version` in `pyproject.toml`, merge, then push a matching tag (`git tag v0.2.0 && git push --tags`).
+The release workflow creates the GitHub release, publishes to PyPI via
+[Trusted Publishing](https://docs.pypi.org/trusted-publishers/) and attaches the binaries.

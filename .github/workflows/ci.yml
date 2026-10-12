@@ -1,0 +1,58 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+      - run: sudo apt-get install -y libldap-dev libsasl2-dev
+      - run: uv run ruff format --check
+      - run: uv run ruff check
+      - run: uv run mypy
+      - run: uv build
+
+  unit:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: sudo apt-get install -y libldap-dev libsasl2-dev
+      - run: uv run pytest
+
+  system:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+        openvpn-version: ["2.6", "2.7"]
+    steps:
+      - uses: actions/checkout@v7
+      - run: tests/system/run.sh ${{ matrix.python-version }} ${{ matrix.openvpn-version }}
+      - name: Benchmark summary
+        if: always()
+        run: cat benchmark/*/results.md >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: benchmark-python${{ matrix.python-version }}-openvpn${{ matrix.openvpn-version }}
+          path: benchmark/
+          if-no-files-found: ignore

@@ -1,16 +1,26 @@
+import contextlib
 import io
 import os
 import stat
-from typing import Iterable
+from collections.abc import Iterable
 
 import ldap
 import pexpect
 import pytest
 from ldap.ldapobject import SimpleLDAPObject
 
-from tests.constants import TEST_TIMEOUT, TEST_PROMPT_DEFAULT_TIMEOUT, OPENVPN_BINARY, \
-    OPENVPN_SERVER_CHALLENGE_RESPONSE_PROMPT, OPENVPN_SERVER_START_TIMEOUT, OPENVPN_LOG_SERVER_INIT_COMPLETE, LDAP_URL, \
-    LDAP_BIND_TIMEOUT, LDAP_ADMIN_PASSWORD, LDAP_ADMIN_DN
+from tests.system.constants import (
+    LDAP_ADMIN_DN,
+    LDAP_ADMIN_PASSWORD,
+    LDAP_BIND_TIMEOUT,
+    LDAP_URL,
+    OPENVPN_BINARY,
+    OPENVPN_LOG_SERVER_INIT_COMPLETE,
+    OPENVPN_SERVER_CHALLENGE_RESPONSE_PROMPT,
+    OPENVPN_SERVER_START_TIMEOUT,
+    TEST_PROMPT_DEFAULT_TIMEOUT,
+    TEST_TIMEOUT,
+)
 
 
 class Process:
@@ -45,14 +55,13 @@ class Process:
 
 
 class OpenVPNProcess(Process):
-
     def __init__(self, args: Iterable, timeout=TEST_TIMEOUT):
         super().__init__(OPENVPN_BINARY, args, timeout)
 
     def enter_username_password(self, username: str, password: str):
-        self.check_in_output('Enter Auth Username:')
+        self.check_in_output("Enter Auth Username:")
         self.send_input(username)
-        self.check_in_output('Enter Auth Password:')
+        self.check_in_output("Enter Auth Password:")
         self.send_input(password)
 
     def enter_challenge_response(self, response: str):
@@ -61,16 +70,14 @@ class OpenVPNProcess(Process):
 
 
 def create_user(con: SimpleLDAPObject, dn: str, password: str):
-    username = (dn.split(',')[0]).split('=')[1]
-    ldap_obj = ((
-        ('objectClass', [b'account', b'simpleSecurityObject']),
-        ('uid', username.encode()),
-        ('userPassword', password.encode()),
-    ))
-    try:
+    username = (dn.split(",")[0]).split("=")[1]
+    ldap_obj = (
+        ("objectClass", [b"account", b"simpleSecurityObject"]),
+        ("uid", username.encode()),
+        ("userPassword", password.encode()),
+    )
+    with contextlib.suppress(ldap.ALREADY_EXISTS):
         con.add_s(dn, ldap_obj)
-    except ldap.ALREADY_EXISTS:
-        pass
 
 
 def delete_user(con: SimpleLDAPObject, dn: str):
@@ -78,11 +85,9 @@ def delete_user(con: SimpleLDAPObject, dn: str):
 
 
 def run_openvpn_server_with_args(args: list) -> Process:
-    os.makedirs('/dev/net', exist_ok=True)
-    try:
-        os.mknod('/dev/net/tun', mode=0o666 | stat.S_IFCHR, device=os.makedev(10, 200))
-    except FileExistsError:
-        pass
+    os.makedirs("/dev/net", exist_ok=True)
+    with contextlib.suppress(FileExistsError):
+        os.mknod("/dev/net/tun", mode=0o666 | stat.S_IFCHR, device=os.makedev(10, 200))
     process = OpenVPNProcess(args)
     process.check_in_output(OPENVPN_LOG_SERVER_INIT_COMPLETE, timeout=OPENVPN_SERVER_START_TIMEOUT)
     return process
