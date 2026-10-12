@@ -1,0 +1,71 @@
+name: Release
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.0
+      - name: Tag must match package version
+        run: test "v$(uv version --short)" = "$GITHUB_REF_NAME"
+      - run: uv build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+
+  github-release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - run: gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  pypi:
+    needs: github-release
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write # PyPI Trusted Publishing, no token secret needed
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
+  binaries:
+    needs: github-release
+    strategy:
+      matrix:
+        include:
+          - { os: ubuntu-22.04, arch: amd64 }
+          - { os: ubuntu-24.04, arch: amd64 }
+          - { os: ubuntu-22.04-arm, arch: arm64 }
+          - { os: ubuntu-24.04-arm, arch: arm64 }
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.0
+        with:
+          python-version: "3.13"
+      - run: sudo apt-get install -y libldap-dev libsasl2-dev
+      - name: Build single-file executable
+        run: |
+          asset="openvpn-ldap-auth-${GITHUB_REF_NAME#v}-${{ matrix.os }}"
+          asset="${asset%-arm}-${{ matrix.arch }}"
+          uv run --frozen pyinstaller --onefile --name "$asset" openvpn_ldap_auth/main.py
+          gh release upload "$GITHUB_REF_NAME" "dist/$asset"
+        env:
+          GH_TOKEN: ${{ github.token }}

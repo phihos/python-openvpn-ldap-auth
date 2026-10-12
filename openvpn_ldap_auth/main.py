@@ -1,30 +1,219 @@
-#!/usr/bin/python3
+"""OpenVPN ``auth-user-pass-verify`` script that authenticates users via an LDAP simple bind."""
+
 import logging
 import os
 import sys
-import traceback
 from base64 import b64decode
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, field
+from enum import StrEnum
+from pathlib import Path
+from typing import Any
 
 import ldap
 import yaml
-from cerberus import Validator
-from ldap.ldapobject import SimpleLDAPObject
 from ldap.filter import escape_filter_chars
 
-LDAP_CONFIG = "/etc/openvpn/ldap.yaml"
+LDAP_CONFIG = Path("/etc/openvpn/ldap.yaml")
+USERNAME_PLACEHOLDER = "{}"
 
-STATIC_CHALLENGE_IGNORE = "ignore"
-STATIC_CHALLENGE_PREPEND = "prepend"
-STATIC_CHALLENGE_APPEND = "append"
-STATIC_CHALLENGE_OPTS = (
-    STATIC_CHALLENGE_IGNORE,
-    STATIC_CHALLENGE_PREPEND,
-    STATIC_CHALLENGE_APPEND,
-)
+log = logging.getLogger("openvpn-ldap-auth")
 
 
-def setup_logging(verbosity: int):
-    if verbosity == 4:
+class StaticChallenge(StrEnum):
+    IGNORE = "ignore"
+    PREPEND = "prepend"
+    APPEND = "append"
+
+
+class InvalidConfigException(Exception):
+    """Raise when the config validation failed."""
+
+
+class InvalidInputException(Exception):
+    """Raise when OpenVPN handed us credentials we cannot parse."""
+
+
+class LDAPException(Exception):
+    """Raise when issues occur while interacting with the LDAP server."""
+
+
+_REQUIRED = object()
+# section -> key -> (type, default)
+_SCHEMA: dict[str, dict[str, tuple[type, Any]]] = {
+    "ldap": {
+        "url": (str, _REQUIRED),
+        "bind_dn": (str, _REQUIRED),
+        "password": (str, _REQUIRED),
+        "timeout": (int, 5),
+    },
+    "authorization": {
+        "base_dn": (str, _REQUIRED),
+        "search_filter": (str, "(uid={})"),
+        "static_challenge": (str, StaticChallenge.IGNORE.value),
+    },
+}
+
+
+@dataclass(frozen=True)
+class Config:
+    """User-defined configuration from ``/etc/openvpn/ldap.yaml``."""
+
+    url: str
+    bind_dn: str
+    password: str = field(repr=False)
+    timeout: int
+    base_dn: str
+    search_filter: str
+    static_challenge: StaticChallenge
+
+    @classmethod
+    def from_dict(cls, raw: object) -> "Config":
+        errors: list[str] = []
+        values: dict[str, Any] = {}
+        if not isinstance(raw, dict):
+            raise InvalidConfigException("Invalid config: top level must be a mapping")
+        errors += [f"{key}: unknown section" for key in raw.keys() - _SCHEMA.keys()]
+        for section_name, schema in _SCHEMA.items():
+            section = raw.get(section_name)
+            if not isinstance(section, dict):
+                errors.append(f"{section_name}: required mapping")
+                continue
+            errors += [
+                f"{section_name}.{key}: unknown field" for key in section.keys() - schema.keys()
+            ]
+            for key, (kind, default) in schema.items():
+                value = section.get(key, default)
+                if value is _REQUIRED:
+                    errors.append(f"{section_name}.{key}: required field")
+                elif type(value) is not kind:  # exact match: YAML `true` must not pass as int
+                    errors.append(f"{section_name}.{key}: must be of type {kind.__name__}")
+                else:
+                    values[key] = value
+        if errors:
+            raise InvalidConfigException(f"Invalid config: {'; '.join(sorted(errors))}")
+
+        try:
+            values["static_challenge"] = StaticChallenge(values["static_challenge"])
+        except ValueError:
+            allowed = ", ".join(StaticChallenge)
+            raise InvalidConfigException(
+                f"Invalid config: authorization.static_challenge must be one of {allowed}"
+            ) from None
+        if USERNAME_PLACEHOLDER not in values["search_filter"]:
+            # without the placeholder every login would bind against the same DN
+            raise InvalidConfigException(
+                f"Invalid config: authorization.search_filter must contain {USERNAME_PLACEHOLDER}"
+            )
+        return cls(**values)
+
+    @classmethod
+    def from_file(cls, path: Path) -> "Config":
+        try:
+            with path.open(encoding="utf-8") as stream:
+                return cls.from_dict(yaml.safe_load(stream))
+        except (OSError, yaml.YAMLError) as e:
+            raise InvalidConfigException(f"Cannot read config {path}: {e}") from e
+
+
+@dataclass(frozen=True)
+class Credentials:
+    """Username and password as handed over by OpenVPN."""
+
+    username: str
+    password: str = field(repr=False)
+    challenge_response: str = field(default="", repr=False)
+
+    @classmethod
+    def from_openvpn(cls, argv: Sequence[str], environ: Mapping[str, str]) -> "Credentials":
+        """Read credentials passed `via-env` or `via-file`."""
+        if "password" in environ:
+            username, password = environ.get("username", ""), environ["password"]
+        else:
+            if len(argv) < 2:
+                raise InvalidInputException("Expected credentials file as first argument")
+            # splitlines() instead of strip(): leading/trailing spaces belong to the password
+            lines = Path(argv[1]).read_text(encoding="utf-8").splitlines()
+            if len(lines) < 2:
+                raise InvalidInputException("Credentials file must contain username and password")
+            username, password = lines[0], lines[1]
+        return cls._decode_static_challenge(username, password)
+
+    @classmethod
+    def _decode_static_challenge(cls, username: str, password: str) -> "Credentials":
+        if not password.startswith("SCRV1:"):
+            log.debug("Using password verbatim")
+            return cls(username, password)
+        log.debug("Extracting static-challenge password and OTP")
+        try:
+            _, b64_password, b64_response = password.split(":")
+            return cls(
+                username,
+                b64decode(b64_password, validate=True).decode(),
+                b64decode(b64_response, validate=True).decode(),
+            )
+        except ValueError as e:  # wrong part count, bad base64 or bad UTF-8
+            raise InvalidInputException("Malformed static-challenge (SCRV1) password") from e
+
+    def bind_password(self, mode: StaticChallenge) -> str:
+        """Combine password and challenge response according to ``mode``."""
+        if not self.challenge_response or mode is StaticChallenge.IGNORE:
+            return self.password
+        if mode is StaticChallenge.PREPEND:
+            return self.challenge_response + self.password
+        return self.password + self.challenge_response
+
+
+def _bind(config: Config, dn: str, password: str) -> Any:
+    con = ldap.initialize(config.url)
+    con.set_option(ldap.OPT_NETWORK_TIMEOUT, config.timeout)
+    con.set_option(ldap.OPT_TIMEOUT, config.timeout)
+    try:
+        con.simple_bind_s(dn, password)
+    except ldap.INVALID_CREDENTIALS as e:
+        raise LDAPException(f"Invalid password for {dn}") from e
+    except ldap.LDAPError as e:
+        raise LDAPException(f"Simple bind failed for {dn}: {e}") from e
+    return con
+
+
+def _find_user_dn(config: Config, username: str) -> str:
+    search_filter = config.search_filter.replace(
+        USERNAME_PLACEHOLDER, escape_filter_chars(username)
+    )
+    con = _bind(config, config.bind_dn, config.password)
+    try:
+        # "1.1" = return no attributes, we only need the DN
+        results = con.search_st(
+            config.base_dn, ldap.SCOPE_SUBTREE, search_filter, ["1.1"], timeout=config.timeout
+        )
+    except ldap.LDAPError as e:
+        raise LDAPException(f"Search for {username} failed: {e}") from e
+    finally:
+        con.unbind_s()
+
+    dns = [dn for dn, _ in results if dn]  # referrals come back with dn=None
+    if len(dns) > 1:
+        raise LDAPException(
+            f"User {username} found multiple times: Please check authorization.search_filter"
+        )
+    if not dns:
+        raise LDAPException(f"User {username} not found")
+    return str(dns[0])
+
+
+def authenticate(config: Config, username: str, password: str) -> None:
+    """Raise :class:`LDAPException` unless ``username`` can bind with ``password``."""
+    if not password:
+        # an empty password turns the bind into an RFC 4513 unauthenticated bind,
+        # which some servers answer with success
+        raise LDAPException(f"Empty password for {username} rejected")
+    user_dn = _find_user_dn(config, username)
+    _bind(config, user_dn, password).unbind_s()
+
+
+def setup_logging(verbosity: int) -> None:
+    if verbosity >= 4:
         level = logging.DEBUG
     elif verbosity == 3:
         level = logging.INFO
@@ -33,233 +222,22 @@ def setup_logging(verbosity: int):
     logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s", level=level)
 
 
-class InvalidConfigException(Exception):
-    """Raise when the config validation failed."""
-
-
-class LDAPException(Exception):
-    """Raise when issues occur while interacting with the LDAP server."""
-
-
-class Config:
-    """Encapsulate user-defined configuration."""
-
-    LDAP_CONFIG_SCHEMA = {
-        "ldap": {
-            "required": True,
-            "type": "dict",
-            "schema": {
-                "url": {
-                    "required": True,
-                    "type": "string",
-                },
-                "bind_dn": {
-                    "required": True,
-                    "type": "string",
-                },
-                "password": {
-                    "required": True,
-                    "type": "string",
-                },
-                "timeout": {
-                    "type": "integer",
-                    "default": 5,
-                },
-            },
-        },
-        "authorization": {
-            "required": True,
-            "type": "dict",
-            "schema": {
-                "base_dn": {
-                    "required": True,
-                    "type": "string",
-                },
-                "search_filter": {
-                    "type": "string",
-                    "default": "(uid={})",
-                },
-                "static_challenge": {
-                    "type": "string",
-                    "allowed": STATIC_CHALLENGE_OPTS,
-                    "default": "ignore",
-                },
-            },
-        },
-    }
-
-    def __init__(self, config: dict):
-        validator = Validator()
-        is_valid = validator.validate(config, self.LDAP_CONFIG_SCHEMA)
-        if not is_valid:
-            raise InvalidConfigException(f"Invalid config: {validator.errors}")
-        self._config = validator.document  # use normalized copy
-
-    @property
-    def url(self) -> str:
-        return self._config["ldap"]["url"]
-
-    @property
-    def bind_dn(self) -> str:
-        return self._config["ldap"]["bind_dn"]
-
-    @property
-    def password(self) -> str:
-        return self._config["ldap"]["password"]
-
-    @property
-    def timeout(self) -> int:
-        return self._config["ldap"]["timeout"]
-
-    @property
-    def base_dn(self) -> str:
-        return self._config["authorization"]["base_dn"]
-
-    @property
-    def search_filter(self) -> str:
-        return self._config["authorization"]["search_filter"]
-
-    @property
-    def static_challenge_mode(self) -> str:
-        return self._config["authorization"]["static_challenge"]
-
-    @staticmethod
-    def from_file(path: str):
-        with open(path, "r", encoding="utf-8") as stream:
-            config = yaml.safe_load(stream)
-        return Config(config=config)
-
-
-class OpenVPNParameters:
-    def __init__(self, static_challenge_mode: str):
-        self.static_challenge_mode = static_challenge_mode
-        self.user = None
-        self._raw_password = None
-        self._password = None
-        self._challenge_response = None
-        self.verbosity = None
-        self.config_file = None
-        if os.environ.get("password", False):
-            self._extract_credentials_from_environment()
-        else:
-            self._extract_credentials_from_input_file()
-        self._decode_password()
-        self._extract_other_parameters_from_environment()
-
-    def _extract_credentials_from_environment(self):
-        self.user = os.environ["username"]
-        self._raw_password = os.environ["password"]
-
-    def _extract_credentials_from_input_file(self):
-        with open(sys.argv[1], "r", encoding="utf-8") as tmp_file:
-            lines = tmp_file.readlines()
-        self.user = lines[0].strip()
-        self._raw_password = lines[1].strip()
-
-    def _decode_password(self):
-        if self._raw_password.startswith("SCRV1"):
-            logging.debug("Extracting static-challenge password and OTP")
-            password_parts = self._raw_password.split(":")
-            self._password = b64decode(password_parts[1])
-            self._challenge_response = b64decode(password_parts[2])
-        else:
-            logging.debug("Using password verbatim")
-            self._password = self._raw_password
-
-    def _extract_other_parameters_from_environment(self):
-        self.verbosity = int(os.environ.get("verb", 1))
-        self.config_file = os.environ["config"] if "config" in os.environ else None
-
-    @property
-    def full_password(self):
-        """Concatenate the actual password with the challenge response if applicable."""
-        if self._challenge_response:
-            if self.static_challenge_mode == STATIC_CHALLENGE_IGNORE:
-                logging.debug("Ignoring challenge response")
-                return self._password
-            elif self.static_challenge_mode == STATIC_CHALLENGE_PREPEND:
-                logging.debug("Prepending challenge response")
-                return self._challenge_response + self._password
-            else:
-                logging.debug("Appending challenge response")
-                return self._password + self._challenge_response
-        else:
-            return self._password
-
-
-class LDAPAuthenticator:
-    def __init__(
-        self,
-        ldap_url: str,
-        bind_dn: str,
-        bind_password: str,
-        user_search_base: str,
-        user_search_template: str,
-        timeout: int,
-    ):
-        self._ldap_url = ldap_url
-        self._user_search_base = user_search_base
-        self._user_search_template = user_search_template
-        self._timeout = timeout
-        self._connection = self._establish_ldap_connection(bind_dn, bind_password)
-
-    def _establish_ldap_connection(
-        self, bind_dn: str, password: str
-    ) -> SimpleLDAPObject:
-        con = ldap.initialize(self._ldap_url)
-        con.set_option(ldap.OPT_NETWORK_TIMEOUT, self._timeout)
-        con.set_option(ldap.OPT_TIMEOUT, self._timeout)
-        try:
-            con.simple_bind_s(bind_dn, password)
-        except ldap.INVALID_CREDENTIALS as e:
-            raise LDAPException(f"Invalid password for {bind_dn}") from e
-        except ldap.LDAPError as e:
-            raise LDAPException(f"Simple bind failed for {bind_dn}: {e}") from e
-        return con
-
-    def _find_user(self, username):
-        results = self._connection.search_st(
-            base=self._user_search_base,
-            scope=ldap.SCOPE_SUBTREE,
-            filterstr=self._user_search_template.format(escape_filter_chars(username)),
-            attrlist=[],
-        )
-        results = [result[0] for result in results]  # extract DNs only
-
-        if len(results) > 1:
-            raise LDAPException(
-                f"User {username} found multiple times: Please check authorization.search_filter"
-            )
-        elif len(results) == 0:
-            raise LDAPException(f"User {username} not found")
-
-        return results[0]
-
-    def authenticate(self, username: str, password: str):
-        user_dn = self._find_user(username)
-        self._establish_ldap_connection(user_dn, password)
-
-
-def main():
+def main() -> None:
+    setup_logging(int(os.environ.get("verb", "1")))  # noqa: SIM112 - name set by OpenVPN
     try:
         config = Config.from_file(LDAP_CONFIG)
-        vpn_params = OpenVPNParameters(config.static_challenge_mode)
-        setup_logging(vpn_params.verbosity)
-        logging.info(f"Authenticating {vpn_params.user}")
-        authenticator = LDAPAuthenticator(
-            config.url,
-            config.bind_dn,
-            config.password,
-            config.base_dn,
-            config.search_filter,
-            config.timeout,
+        credentials = Credentials.from_openvpn(sys.argv, os.environ)
+        log.info("Authenticating %s", credentials.username)
+        authenticate(
+            config, credentials.username, credentials.bind_password(config.static_challenge)
         )
-        authenticator.authenticate(vpn_params.user, vpn_params.full_password)
-    except Exception as e:
-        logging.error(f"Exception while authenticating: {e}")
-        traceback.print_exc()
+    except (InvalidConfigException, InvalidInputException, LDAPException) as e:
+        log.error("Authentication failed: %s", e)
         sys.exit(1)
-    sys.exit(0)
+    except Exception:
+        log.exception("Unexpected error while authenticating")
+        sys.exit(1)
+    log.info("Authenticated %s", credentials.username)
 
 
 if __name__ == "__main__":

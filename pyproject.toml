@@ -1,77 +1,76 @@
-[tool.poetry]
+[project]
 name = "openvpn-ldap-auth"
-version = "0.1.8"
+version = "0.2.0"
 description = "An auth verify script for OpenVPN to authenticate via LDAP."
-authors = ["Philipp Hossner <philipph@posteo.de>"]
-license = 'MIT'
-readme = 'README.md'
-homepage = 'https://github.com/phihos/python-openvpn-ldap-auth/'
-repository = 'https://github.com/phihos/python-openvpn-ldap-auth/'
-keywords = [
-    "OpenVPN",
-    "LDAP",
-]
+authors = [{ name = "Philipp Hossner", email = "philipph@posteo.de" }]
+license = "MIT"
+license-files = ["LICENSE"]
+readme = "README.md"
+requires-python = ">=3.11"
+keywords = ["OpenVPN", "LDAP"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Plugins",
     "Intended Audience :: System Administrators",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: POSIX",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: System :: Systems Administration :: Authentication/Directory :: LDAP",
 ]
+dependencies = [
+    "PyYAML>=6.0.1",
+    "python-ldap>=3.4",
+    # transitive via python-ldap; floor pins the security fix
+    "pyasn1>=0.6.3",
+]
 
-packages = [{ include = "openvpn_ldap_auth" }, ]
+[project.urls]
+Homepage = "https://github.com/phihos/python-openvpn-ldap-auth/"
+Repository = "https://github.com/phihos/python-openvpn-ldap-auth/"
+Issues = "https://github.com/phihos/python-openvpn-ldap-auth/issues"
 
-[tool.poetry.scripts]
-openvpn-ldap-auth = 'openvpn_ldap_auth.main:main'
+[project.scripts]
+openvpn-ldap-auth = "openvpn_ldap_auth.main:main"
 
-[tool.poetry.dependencies]
-python = ">= 3.10, < 3.14"
-PyYAML = "^6.0.1"
-python-ldap = "^3.3.1"
-Cerberus = "^1.3.2"
-pyasn1 = ">=0.6.3"
-
-[tool.poetry.group.dev.dependencies]
-pytest = ">=6.2,<10.0"
-pytest-timeout = ">=1.4.2,<3.0.0"
-pexpect = "^4.8.0"
-pyinstaller = "^6.5.0"
-plotly = ">=4.14.3,<7.0.0"
-kaleido = "0.2.1"
-stdeb = "^0.10.0"
-tox = "^4.14.2"
-black = {version = ">=26.3.1", python = ">=3.10"}
-setuptools = ">=78.1.1"
-
-[tool.tox]
-legacy_tox_ini = """
-[tox]
-isolated_build = true
-envlist = python{310,311,312,313}-openvpn{26}
-basepython = python3
-
-[testenv:python{310,311,312,313}-openvpn{26}]
-skip_install = true
-setenv =
-    python310: python_version=3.10
-    python311: python_version=3.11
-    python312: python_version=3.12
-    python313: python_version=3.13
-    openvpn26: openvpn_version=2.6
-allowlist_externals =
-    docker
-    bash
-commands_pre:
-    docker compose -f tests/resources/docker/docker-compose.yml up -d --build
-    docker compose -f tests/resources/docker/docker-compose.yml run openvpn bash -c 'openvpn --version || true'
-commands =
-    docker compose -f tests/resources/docker/docker-compose.yml run openvpn bash -c 'poetry install && poetry build && ./pyinstaller.sh && mv dist/openvpn-ldap-auth /usr/bin/openvpn-ldap-auth-pyinstaller && pip install --upgrade dist/*.whl && poetry run pytest {posargs}'
-commands_post:
-    bash -c "docker compose -f tests/resources/docker/docker-compose.yml run openvpn chown -R $UID /project"
-    docker compose -f tests/resources/docker/docker-compose.yml down
-"""
+[dependency-groups]
+dev = [
+    "mypy>=1.18",
+    "pexpect>=4.9",
+    "pyinstaller>=6.16",
+    "pytest>=8.4",
+    "pytest-timeout>=2.4",
+    "ruff>=0.14",
+    "types-PyYAML>=6.0",
+]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.sdist]
+include = ["openvpn_ldap_auth", "README.md", "LICENSE"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/unit"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF", "S", "PT"]
+
+[tool.ruff.lint.per-file-ignores]
+# bare assert is how pytest asserts
+"tests/unit/*" = ["S101"]
+
+[tool.mypy]
+strict = true
+files = ["openvpn_ldap_auth"]
+
+[[tool.mypy.overrides]]
+module = ["ldap", "ldap.*"]
+ignore_missing_imports = true
